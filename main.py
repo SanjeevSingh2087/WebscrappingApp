@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 from ttkthemes import ThemedTk
 
+
 # Create a class for the GUI application
 class SmartrLogistics:
     # Define the attributes and widgets of the application
@@ -28,9 +29,17 @@ class SmartrLogistics:
         # Create the widgets frame
         self.widgets_frame = ttk.LabelFrame(self.frame)
         self.widgets_frame.grid(row=0, column=0, padx=20, pady=10)
+        self.name_entry = ttk.Entry(self.widgets_frame)
+        self.name_entry.insert(0, "User Name")
+        self.name_entry.bind("<FocusIn>", lambda e: self.name_entry.delete('0', 'end'))
+        self.name_entry.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="ew")
+        self.password_entry = ttk.Entry(self.widgets_frame)
+        self.password_entry.insert(0, "Password")
+        self.password_entry.bind("<FocusIn>", lambda e: self.password_entry.delete('0', 'end'))
+        self.password_entry.grid(row=3, column=0, padx=5, pady=(0, 5), sticky="ew")
         # Create the buttons
         self.button = ttk.Button(self.widgets_frame, text="Click to update", command=self.update_data)
-        self.button.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        self.button.grid(row=10, column=0, padx=5, pady=5, sticky="nsew")
         self.upload_button = tk.Button(self.root, text="Upload File", command=self.upload_file)
         self.upload_button.pack(pady=20)
         self.refresh_button = ttk.Button(self.widgets_frame, text="Refresh File", command=self.refresh_data)
@@ -72,6 +81,7 @@ class SmartrLogistics:
         self.treeScroll2.config(command=self.treeview2.xview)
         self.notebook.add(self.treeFrame2, text="Failed Data")
         self.failed_awbs_data()
+        
 
     def upload_file(self):
         global file_path
@@ -157,43 +167,47 @@ class SmartrLogistics:
     def update_data(self):
     # Access the instance variable file_path
         global file_path
+        user_name = self.name_entry.get()
+        password = self.password_entry.get()
 
         if file_path:
             # Load the workbook
             workbook = openpyxl.load_workbook(file_path)
             sheet = workbook.active
 
-            # Set the path to your chromedriver.exe
+             # Set the path to your chromedriver.exe
             service = Service(executable_path="chromedriver.exe")
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
 
             # Initialize the WebDriver with the specified options
-            driver = webdriver.Chrome(service=service)
+            driver = webdriver.Chrome(service=service,options=chrome_options)
 
             try:
-                driver.get("https://login.smartr.in")
+                driver.get("https://google.com")
 
                 # Wait for 5 seconds until the browser finds the element id
                 WebDriverWait(driver, 5).until(
-                    EC.presence_of_all_elements_located((By.ID, "ctl00_ContentPlaceHolder1_txtUserName"))
+                    EC.presence_of_all_elements_located((By.ID, "#"))
                 )
-                input_element = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_txtUserName")
+                input_element = driver.find_element(By.ID, "#")
                 input_element.clear()
-                input_element.send_keys( "Sanjeevkumar" + Keys.TAB)
+                input_element.send_keys(user_name + Keys.TAB)
 
                 WebDriverWait(driver,5).until(
-                    EC.presence_of_all_elements_located((By.ID,"ctl00_ContentPlaceHolder1_txtPwd"))
+                    EC.presence_of_all_elements_located((By.ID,"#"))
                     )
 
-                input_element = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_txtPwd")
+                input_element = driver.find_element(By.ID, "#")
                 input_element.clear()
-                input_element.send_keys( "Password" + Keys.ENTER)
+                input_element.send_keys(password + Keys.ENTER)
 
                 # Searching for the revoke AWB status page
                 WebDriverWait(driver, 5).until(
-                    EC.presence_of_all_elements_located((By.ID, "ctl00_txtSearchLink"))
+                    EC.presence_of_all_elements_located((By.ID, "#"))
                 )
 
-                input_element = driver.find_element(By.ID, "ctl00_txtSearchLink")
+                input_element = driver.find_element(By.ID, "#")
                 text = "Revoke AWB Status"
 
                 # Slowing down the speed of send key in the element
@@ -205,51 +219,59 @@ class SmartrLogistics:
                 input_element.send_keys(Keys.ENTER)
 
                 WebDriverWait(driver, 5).until(
-                    EC.presence_of_all_elements_located((By.ID, "__tab_ctl00_ContentPlaceHolder1_TabContainer1_TabPanel3"))
+                    EC.presence_of_all_elements_located((By.ID, "#"))
                 )
 
                 # Clicking the Revoke element
-                input_element = driver.find_element(By.ID, "__tab_ctl00_ContentPlaceHolder1_TabContainer1_TabPanel3")
+                input_element = driver.find_element(By.ID, "#")
                 input_element.click()
 
                 for row in sheet.iter_rows(min_row=2, values_only=True):
-                    awb_number, date, route_id, receiver_name = row
+                    if len(row) == 4:
+                        awb_number, date, route_id, receiver_name = row
+                     # rest of your code..
+                    else:
+                        # Handle the case where the length of row is not 4
+                        print("Invalid row format:", row)
                     date_string = date.strftime("%Y-%m-%d")
                     date_object = datetime.strptime(date_string, "%Y-%m-%d")
                     awb_date = date_object.strftime("%d/%m/%Y")
+                    print(f"file content: {awb_number}{awb_date}{route_id}{receiver_name}")
+
 
                     # Sending the input to the AWB element
-                    input_element = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_TabContainer1_TabPanel3_txtDlvAWBNumber")
+                    input_element = driver.find_element(By.ID, "#")
                     input_element.clear()
                     input_element.send_keys(awb_number)
 
                     # Sending the input to the Date element
-                    input_element = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_TabContainer1_TabPanel3_textIssueDate_txtDate")
+                    input_element = driver.find_element(By.ID, "#")
                     input_element.clear()
                     input_element.send_keys(awb_date)
 
                     # Sending the input to the RouterID element
-                    input_element = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_TabContainer1_TabPanel3_txtRouteID")
+                    input_element = driver.find_element(By.ID, "#")
                     input_element.clear()
                     input_element.send_keys(route_id)
 
                     # Sending the input to the ReceiverName element
-                    input_element = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_TabContainer1_TabPanel3_txtReceiverName")
+                    input_element = driver.find_element(By.ID, "#")
                     input_element.clear()
                     input_element.send_keys(receiver_name)
 
                     # Clicking the Enter button at the end
-                    form_element = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_TabContainer1_TabPanel3_btnUpdateDelivered")
+                    form_element = driver.find_element(By.ID, "#")
                     form_element.send_keys(Keys.ENTER)
 
                     # Reading the AWB update status
                     try:
                         WebDriverWait(driver, 5).until(
-                            EC.presence_of_all_elements_located((By.ID, "ctl00_ContentPlaceHolder1_lblStatus"))
+                            EC.presence_of_all_elements_located((By.ID, "#"))
                         )
-                        awb_status = driver.find_element(By.ID, "ctl00_ContentPlaceHolder1_lblStatus")
+                        awb_status = driver.find_element(By.ID, "#")
                         value = awb_status.text
                         if value != "AWB updated successfully.":
+
                             # Open the FailedAWBs.xlsx file
                             failed_workbook = openpyxl.load_workbook("FailedAWBs.xlsx")
                             failed_sheet = failed_workbook.active
@@ -280,7 +302,7 @@ class SmartrLogistics:
 
                     except (TimeoutException, NoSuchElementException):
                         # Handle the case where the element is not found within the timeout
-                        print("Element with ID 'ctl00_ContentPlaceHolder1_lblStatus' not found within 5 seconds.")
+                        print("Element with ID '#")
 
             finally:
                 driver.quit()
